@@ -12,3 +12,8 @@
 
 - Extensions/*: needed helper files and DSC modules for configuring servers
 
+## Demo
+
+[![Video on Youtube](http://img.youtube.com/vi/tpO-4KcZqXg/0.jpg)](http://youtu.be/tpO-4KcZqXg)
+
+
