@@ -1,56 +1,57 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json",
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "ServiceName": {
-            "type": "String"
+            "type": "string"
         },
         "resourceLocation": {
             "type": "string"
         },
-        "administratorAccount": {
-            "type": "string"
-        },
-        "administratorPassword": {
-            "type": "string"
-        },
-        "servicePassword": {
-            "type": "string"
-        },
-        "domainName": {
-            "type": "string"
-        },
-        "domainNetBiosName": {
-            "type": "string"
-        }
+        "DomainAdminAccount": { "type": "string" },
+        "DomainAdminAccountPassword": { "type": "securestring" },
+        "DomainNameFQDN": { "type": "string" },
+        "DomainName": { "type": "string" },
+        "SQLServiceAccount": { "type": "string" },
+        "SQLServiceAccountPassword": { "type": "securestring" },
+        "FarmAccount": { "type": "string" },
+        "FarmAccountPassword": { "type": "securestring" },
+        "InstallAccount": { "type": "string" },
+        "InstallAccountPassword": { "type": "securestring" },
+        "WebPoolManagedAccount": { "type": "string" },
+        "WebPoolManagedAccountPassword": { "type": "securestring" },
+        "ServicePoolManagedAccount": { "type": "string" },
+        "ServicePoolManagedAccountPassword": { "type": "securestring" },
+        "FarmPassPhrase": { "type": "string" },
+        "SharePointProductKey": { "type": "string" },
+        "WebAppUrl": { "type": "string" },
+        "TeamSiteUrl": { "type": "string" },
+        "MySiteHostUrl": { "type": "string" },
+        "DevSiteUrl": { "type": "string" }
+
     },
-    "variables":{
-        "DCDomainName":"[concat(parameters('ServiceName'),'-DC')]",    
-        "SPDomainName":"[concat(parameters('ServiceName'),'-SP')]",
-        "StorageType":"Standard_LRS",
-        "DCHardware":"Basic_A0",
-        "SPHardware":"Basic_A4",
-        "StorageName":"[concat(parameters('ServiceName'),'storage')]",    
-        "VNetName":"[concat(parameters('ServiceName'),'VNet')]",    
-        "DC1Name":"[concat(parameters('ServiceName'),'-dc1')]", 
-        "SP1Name":"[concat(parameters('ServiceName'),'-sp1')]", 
-        "DC1Disk1Name":"[concat(parameters('ServiceName'),'-DC1-os')]",
-        "DC1Disk2Name":"[concat(parameters('ServiceName'),'-DC1-data')]",
-        "SP1Disk1Name":"[concat(parameters('ServiceName'),'-SP1-os')]",
-        "SP1Disk2Name":"[concat(parameters('ServiceName'),'-SP1-data1')]",
-        "SP1Disk3Name":"[concat(parameters('ServiceName'),'-SP1-data2')]",
-        "SPPrepareMachineModules":"\"xComputerManagement\",\"xNetworking\",\"xActiveDirectory\",\"xSQLServer_1.2.1.0\"",
-        "DCPrepareMachineModules":"\"xComputerManagement\",\"xActiveDirectory\"",
+    "variables": {
+        "DCDomainName": "[concat(parameters('ServiceName'),'-DC')]",
+        "SPDomainName": "[concat(parameters('ServiceName'),'-SP')]",
+        "StorageType": "Standard_LRS",
+        "DCHardware": "Basic_A1",
+        "SPHardware": "Basic_A4",
+        "StorageName": "[concat(parameters('ServiceName'),'storage')]",
+        "VNetName": "[concat(parameters('ServiceName'),'VNet')]",
+        "DC1Name": "[concat(parameters('ServiceName'),'-dc1')]",
+        "SP1Name": "[concat(parameters('ServiceName'),'-sp1')]",
+        "DC1Disk1Name": "[concat(parameters('ServiceName'),'-DC1-os')]",
+        "DC1Disk2Name": "[concat(parameters('ServiceName'),'-DC1-data')]",
+        "SP1Disk1Name": "[concat(parameters('ServiceName'),'-SP1-os')]",
+        "SP1Disk2Name": "[concat(parameters('ServiceName'),'-SP1-data1')]",
+        "SP1Disk3Name": "[concat(parameters('ServiceName'),'-SP1-data2')]",
+        "SP1Disk4Name": "[concat(parameters('ServiceName'),'-SP1-data3')]",
         "DCImage": "a699494373c04fc0bc8f2bb1389d6106__Windows-Server-2012-R2-201502.01-en.us-127GB.vhd",
-        "SPImage": "03f55de797f546a1b29d1b8d66be687a__Visual-Studio-2013-Ultimate-Update4-AzureSDK-2.5-WS2012-201502.23",
-        "CreateADPrimaryDomainControllerCommand" : "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\CreateADPrimaryDomainController.ps1 -DomainName \"',parameters('domainName'),'\" -DomainNetBiosName \"',parameters('domainNetBiosName'),'\" -UserName \"',parameters('administratorAccount'),'\" -Password \"',parameters('administratorPassword'), '\" ')]",
-        "CreateSPCommand" : "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\CreateSPServer.ps1 -DomainName \"',parameters('domainName'),'\" -domainNetBiosName \"',parameters('domainNetBiosName'),'\" -DomainAdministratorUserName \"',parameters('administratorAccount'),'\" -DomainAdministratorPassword \"',parameters('administratorPassword'), '\" -ServiceUserName \"SQLService\" -ServicePassword \"',parameters('servicePassword'), '\"')]",
-        "SetupSQLCommand" : "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\SetupSQL.ps1 -DomainNetBiosName \"',parameters('domainNetBiosName'),'\" -SQLServiceAccount \"SQLService\" -SQLServiceAccountPassword \"',parameters('servicePassword'), '\" -SQLAgentAccount \"SQLAgent\" -SQLAgentAccountPassword \"',parameters('servicePassword'), '\" -SQLDrive  \"F\"  -SetupAccount \"SPSetup\"')]",
-        "SetupSPCommand" : "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\SetupSP.ps1 -DomainName \"',parameters('domainName'),'\" -domainNetBiosName \"',parameters('domainNetBiosName'),'\" -DomainAdministratorUserName \"',parameters('administratorAccount'),'\" -DomainAdministratorPassword \"',parameters('administratorPassword'), '\" -ServiceUserName \"SQLService\" -ServicePassword \"',parameters('servicePassword'), '\"')]",
-            
+        "SPImage": "03f55de797f546a1b29d1b8d66be687a__Visual-Studio-2013-Ultimate-Update4-AzureSDK-2.5-WS2012-201502.23"
+
     },
     "resources": [
-         {
+        {
             "type": "Microsoft.ClassicStorage/StorageAccounts",
             "name": "[variables('StorageName')]",
             "apiVersion": "2014-06-01",
@@ -71,7 +72,8 @@
                     ]
                 },
                 "dhcpOptions": {
-                    "dnsServers": [ "10.1.0.20" ]
+                    /* Using a public DNS (Google public = 8.8.8.8.) so that the DSC extensions can download its stuff*/
+                    "dnsServers": [ "10.1.0.20", "8.8.8.8" ]
                 },
                 "subnets": [
                     {
@@ -86,7 +88,7 @@
             }
         },
         {
-            "type": "Microsoft.ClassicCompute/domainNames",
+            "type": "Microsoft.classicCompute/domainNames",
             "name": "[variables('DCDomainName')]",
             "apiVersion": "2014-06-01",
             "location": "[parameters('resourceLocation')]",
@@ -95,7 +97,7 @@
             }
         },
         {
-            "type": "Microsoft.ClassicCompute/domainNames",
+            "type": "Microsoft.classicCompute/domainNames",
             "name": "[variables('SPDomainName')]",
             "apiVersion": "2014-06-01",
             "location": "[parameters('resourceLocation')]",
@@ -110,7 +112,7 @@
             "location": "[parameters('resourceLocation')]",
             "properties": {
                 "domainName": {
-                    "id": "[concat(resourceGroup().id, '/providers/Microsoft.ClassicCompute/domainNames/', variables('DCDomainName'))]"
+                    "id": "[concat(resourceGroup().id, '/providers/Microsoft.classicCompute/domainNames/', variables('DCDomainName'))]"
                 },
                 "networkProfile": {
                     "virtualNetwork": {
@@ -142,53 +144,14 @@
                 },
                 "operatingSystemProfile": {
                     "computerName": "[variables('DC1Name')]",
-                    "adminUserName": "[parameters('administratorAccount')]",
-                    "adminPassword": "[parameters('administratorPassword')]",
+                    "adminUserName": "[parameters('DomainAdminAccount')]",
+                    "adminPassword": "[parameters('DomainAdminAccountPassword')]",
                     "windowsOperatingSystemProfile": {
                         "winRMListeners": [
                             {
                                 "protocol": "Https"
                             }
-                        ],
-                        "unattendedSetupConfigurations": [
-                            {
-                                "configurationName": "oobeSystem",
-                                "components": [
-                                    {
-                                        "componentName": "Microsoft-Windows-Shell-Setup",
-                                        "settings": [
-                                            {
-                                                "settingName": "FirstLogonCommands",
-                                                "content": {
-                                                    "FirstLogonCommands": {
-                                                        "@xmlns:wcm": "http://schemas.microsoft.com/WMIConfig/2002/State",
-                                                        "SynchronousCommand": {
-                                                            "@wcm:action": "add",
-                                                            "CommandLine": "powershell.exe -Command Import-Module ServerManager; Install-WindowsFeature DNS; Get-NetAdapter Ethernet* | Set-DnsClientServerAddress -ServerAddresses 127.0.0.1",
-                                                            "Order": "1"
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "settingName": "AutoLogon",
-                                                "content": {
-                                                    "AutoLogon": {
-                                                        "Enabled": "True",
-                                                        "LogonCount": "1",
-                                                        "Username": "[parameters('administratorAccount')]",
-                                                        "Password": {
-                                                            "Value": "[parameters('administratorPassword')]"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
                         ]
-
                     }
                 },
                 "storageProfile": {
@@ -204,7 +167,7 @@
                             "caching": "None",
                             "diskSize": "120",
                             "lun": "0",
-                            "vhdUri": "[concat(reference(concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))).endpoints[0], 'vhds/', parameters('ServiceName'), variables('DC1Disk2Name'),'.vhd')]",
+                            "vhdUri": "[concat(reference(concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))).endpoints[0], 'vhds/', parameters('ServiceName'), variables('DC1Disk2Name'),'.vhd')]"
                         }
                     ]
 
@@ -214,53 +177,64 @@
                         "extension": "BGInfo",
                         "publisher": "Microsoft.Compute",
                         "version": "1.*"
-                    }, {
-                        "extension": "CustomScriptExtension",
-                        "publisher": "Microsoft.Compute",
+                    },
+                    {
+                        "extension": "DSC",
+                        "publisher": "Microsoft.Powershell",
                         "version": "1.*",
                         "parameters": {
                             "public": {
-                                "fileUris": [
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/PrepareMachine.ps1",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xComputerManagement.zip",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xActiveDirectory.zip",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xSQLServer_1.2.1.0.zip"
-                                ],
-                                "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\PrepareMachine.ps1 -Modules ', variables('DCPrepareMachineModules'),' -Force')]"
+                                "ConfigurationFunction": "CreateADPrimaryDomainController.ps1\\ADDSForest",
+                                "ModulesUrl": "https://wwazprst.blob.core.windows.net/scripts/CreateADPrimaryDomainController.ps1.zip",
+                                "Properties": {
+                                    "DomainName": "[parameters('DomainNameFQDN')]",
+                                    "DomainNetBiosName": "[parameters('DomainName')]",
+                                    "DomainAdminAccount": {
+                                        "UserName": "[parameters('DomainAdminAccount')]",
+                                        "Password": "PrivateSettingsRef:DomainAdminAccountPassword"
+                                    },
+                                    "SQLServiceAccount": {
+                                        "UserName": "[parameters('SQLServiceAccount')]",
+                                        "Password": "PrivateSettingsRef:SQLServiceAccountPassword"
+                                    },
+                                    "FarmAccount": {
+                                        "UserName": "[parameters('FarmAccount')]",
+                                        "Password": "PrivateSettingsRef:FarmAccountPassword"
+                                    },
+                                    "InstallAccount": {
+                                        "UserName": "[parameters('InstallAccount')]",
+                                        "Password": "PrivateSettingsRef:InstallAccountPassword"
+                                    },
+                                    "WebPoolManagedAccount": {
+                                        "UserName": "[parameters('WebPoolManagedAccount')]",
+                                        "Password": "PrivateSettingsRef:WebPoolManagedAccountPassword"
+                                    },
+                                    "ServicePoolManagedAccount": {
+                                        "UserName": "[parameters('ServicePoolManagedAccount')]",
+                                        "Password": "PrivateSettingsRef:ServicePoolManagedAccountPassword"
+                                    }
+
+                                }
+                            },
+                            "private": {
+                                "Items": {
+                                    "DomainAdminAccountPassword": "[parameters('DomainAdminAccountPassword')]",
+                                    "SQLServiceAccountPassword": "[parameters('SQLServiceAccountPassword')]",
+                                    "FarmAccountPassword": "[parameters('FarmAccountPassword')]",
+                                    "InstallAccountPassword": "[parameters('InstallAccountPassword')]",
+                                    "WebPoolManagedAccountPassword": "[parameters('WebPoolManagedAccountPassword')]",
+                                    "ServicePoolManagedAccountPassword": "[parameters('ServicePoolManagedAccountPassword')]"
+                                }
                             }
                         }
                     }
-
                 ]
             },
             "dependsOn": [
-                "[concat('Microsoft.ClassicCompute/domainNames/', variables('DCDomainName'))]",
+                "[concat('Microsoft.classicCompute/domainNames/', variables('DCDomainName'))]",
                 "[concat('Microsoft.ClassicNetwork/virtualNetworks/', variables('VNetName'))]",
                 "[concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))]"
 
-            ]
-        },
-        {
-            "type": "Microsoft.ClassicCompute/virtualMachines/extensions",
-            "properties": {
-                "extension": "CustomScriptExtension",
-                "publisher": "Microsoft.Compute",
-                "version": "1.*",
-                "parameters": {
-                    "public": {
-                        "fileUris": [
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/Common.ps1",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/CreateADPrimaryDomainController.ps1"
-                        ],
-                        "commandToExecute": "[variables('CreateADPrimaryDomainControllerCommand')]"
-                    }
-                }
-            },
-            "apiVersion": "2014-06-01",
-            "name": "[concat(variables('DC1Name'),'/CreateADPrimaryDomainControllerCustomScript')]",
-            "location": "[parameters('resourceLocation')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.ClassicCompute/virtualMachines', variables('DC1Name'))]"
             ]
         },
         {
@@ -270,7 +244,7 @@
             "location": "[parameters('resourceLocation')]",
             "properties": {
                 "domainName": {
-                    "id": "[concat(resourceGroup().id, '/providers/Microsoft.ClassicCompute/domainNames/', variables('SPDomainName'))]"
+                    "id": "[concat(resourceGroup().id, '/providers/Microsoft.classicCompute/domainNames/', variables('SPDomainName'))]"
                 },
                 "networkProfile": {
                     "virtualNetwork": {
@@ -301,8 +275,8 @@
                 },
                 "operatingSystemProfile": {
                     "computerName": "[variables('SP1Name')]",
-                    "adminUserName": "[parameters('administratorAccount')]",
-                    "adminPassword": "[parameters('administratorPassword')]",                   
+                    "adminUserName": "[parameters('DomainAdminAccount')]",
+                    "adminPassword": "[parameters('DomainAdminAccountPassword')]",
                     "windowsOperatingSystemProfile": {
                         "winRMListeners": [
                             {
@@ -333,6 +307,13 @@
                             "diskSize": "1023",
                             "lun": "1",
                             "vhdUri": "[concat(reference(concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))).endpoints[0], 'vhds/', parameters('ServiceName'), variables('SP1Disk3Name'),'.vhd')]",
+                        },
+                        {
+                            "diskName": "[variables('SP1Disk3Name')]",
+                            "caching": "None",
+                            "diskSize": "1023",
+                            "lun": "2",
+                            "vhdUri": "[concat(reference(concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))).endpoints[0], 'vhds/', parameters('ServiceName'), variables('SP1Disk4Name'),'.vhd')]",
                         }
                     ]
 
@@ -344,83 +325,70 @@
                         "version": "1.*"
                     },
                     {
-                        "extension": "CustomScriptExtension",
-                        "publisher": "Microsoft.Compute",
+                        "extension": "DSC",
+                        "publisher": "Microsoft.Powershell",
                         "version": "1.*",
                         "parameters": {
                             "public": {
-                                "fileUris":[  
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/PrepareMachine.ps1",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xComputerManagement.zip",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xNetworking.zip",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xActiveDirectory.zip",
-                                   "https://wwprovisioningfiles.blob.core.windows.net/scripts/xSQLServer_1.2.1.0.zip"
-                                ],
-                                "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -Command .\\PrepareMachine.ps1 -Modules ', variables('SPPrepareMachineModules'),' -Force')]"
+                                "ConfigurationFunction": "CreateSingleMSDNSPServer.ps1\\SingleMSDNServer",
+                                "ModulesUrl": "https://wwazprst.blob.core.windows.net/scripts/CreateSingleMSDNSPServer.ps1.zip",
+                                "Properties": {
+                                    "DomainNameFQDN": "[parameters('DomainNameFQDN')]",
+                                    "DomainName": "[parameters('DomainName')]",
+                                    "ProductKey": "[parameters('SharePointProductKey')]",
+                                    "FarmPassPhrase": "[parameters('FarmPassPhrase')]",
+                                    "WebAppUrl": "[parameters('WebAppUrl')]",
+                                    "TeamSiteUrl": "[parameters('TeamSiteUrl')]",
+                                    "DevSiteUrl": "[parameters('DevSiteUrl')]",
+                                    "MySiteHostUrl": "[parameters('MySiteHostUrl')]",
+                                    "DomainAdminAccount": {
+                                        "UserName": "[parameters('DomainAdminAccount')]",
+                                        "Password": "PrivateSettingsRef:DomainAdminAccountPassword"
+                                    },
+                                    "SQLServiceAccount": {
+                                        "UserName": "[parameters('SQLServiceAccount')]",
+                                        "Password": "PrivateSettingsRef:SQLServiceAccountPassword"
+                                    },
+                                    "FarmAccount": {
+                                        "UserName": "[parameters('FarmAccount')]",
+                                        "Password": "PrivateSettingsRef:FarmAccountPassword"
+                                    },
+                                    "InstallAccount": {
+                                        "UserName": "[parameters('InstallAccount')]",
+                                        "Password": "PrivateSettingsRef:InstallAccountPassword"
+                                    },
+                                    "WebPoolManagedAccount": {
+                                        "UserName": "[parameters('WebPoolManagedAccount')]",
+                                        "Password": "PrivateSettingsRef:WebPoolManagedAccountPassword"
+                                    },
+                                    "ServicePoolManagedAccount": {
+                                        "UserName": "[parameters('ServicePoolManagedAccount')]",
+                                        "Password": "PrivateSettingsRef:ServicePoolManagedAccountPassword"
+                                    }
+
+                                }
+                            },
+                            "private": {
+                                "Items": {
+                                    "DomainAdminAccountPassword": "[parameters('DomainAdminAccountPassword')]",
+                                    "SQLServiceAccountPassword": "[parameters('SQLServiceAccountPassword')]",
+                                    "FarmAccountPassword": "[parameters('FarmAccountPassword')]",
+                                    "InstallAccountPassword": "[parameters('InstallAccountPassword')]",
+                                    "WebPoolManagedAccountPassword": "[parameters('WebPoolManagedAccountPassword')]",
+                                    "ServicePoolManagedAccountPassword": "[parameters('ServicePoolManagedAccountPassword')]"
+                                }
                             }
                         }
                     }
-
                 ]
             },
             "dependsOn": [
-               "[concat('Microsoft.ClassicCompute/domainNames/', variables('SPDomainName'))]",
+                "[concat('Microsoft.classicCompute/domainNames/', variables('SPDomainName'))]",
                 "[concat('Microsoft.ClassicNetwork/virtualNetworks/', variables('VNetName'))]",
-                "[concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))]"
-            ]
-        },
-        {
-            "type": "Microsoft.ClassicCompute/virtualMachines/extensions",
-            "properties": {
-                "extension": "CustomScriptExtension",
-                "publisher": "Microsoft.Compute",
-                "version": "1.*",
-                "parameters": {
-                    "public": {
-                        "fileUris": [
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/Common.ps1",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/CreateSPServer.ps1",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/xComputerManagement.zip",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/xSqlPs.zip"
-                        ],
-                        "commandToExecute": "[variables('CreateSPCommand')]"
-                    }
-                }
-            },
-            "apiVersion": "2014-06-01",
-            "name": "[concat(variables('SP1Name'),'/CreateSPCommand')]",
-            "location": "[parameters('resourceLocation')]",
-            "dependsOn": [
-                "[concat('Microsoft.ClassicCompute/virtualMachines/',variables('DC1Name'),'/extensions/CreateADPrimaryDomainControllerCustomScript')]",
-                "[resourceId('Microsoft.ClassicCompute/virtualMachines', variables('SP1Name'))]"
-            ]
-        },
-        
-        {
-            "type": "Microsoft.ClassicCompute/virtualMachines/extensions",
-            "properties": {
-                "extension": "CustomScriptExtension",
-                "publisher": "Microsoft.Compute",
-                "version": "1.*",
-                "parameters": {
-                    "public": {
-                        "fileUris": [
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/Common.ps1",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/SetupSP.ps1",
-                            "https://wwprovisioningfiles.blob.core.windows.net/scripts/ConfigureSharePointFarmInDomain.ps1"
-                        ],
-                        "commandToExecute": "[variables('SetupSPCommand')]"
-                    }
-                }
-            },
-            "apiVersion": "2014-06-01",
-            "location": "[parameters('resourceLocation')]",
-            "name": "[concat(variables('SP1Name'),'/SetupSPCommand')]",
-            "dependsOn": [
-                "[concat('Microsoft.ClassicCompute/virtualMachines/',variables('SP1Name'),'/extensions/CreateSPCommand')]"
-            ]
-        },
+                "[concat('Microsoft.ClassicStorage/storageAccounts/', variables('StorageName'))]" ,
+                "[concat('Microsoft.ClassicCompute/virtualMachines/', variables('DC1Name'))]"
 
-
+            ]
+        }
     ]
 }

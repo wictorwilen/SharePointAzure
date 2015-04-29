@@ -6,19 +6,19 @@ Get-Module -Name Azure
 
 
 # Parameters
-$subscriptionName = "<Your subscription>"
-$StorageAccount = "<a storage account name>"
+$subscriptionName = "<SUBSCRIPTION>"
+$StorageAccount = "<STORAGE ACCOUNT>"
 $StorageContainer = 'scripts'
 
 
 # AuthN
 Add-AzureAccount
+Switch-AzureMode -Name AzureServiceManagement
 
 # Choose Azure sub
 Select-AzureSubscription -SubscriptionName $subscriptionName
 
 # Create Storage Account for provisioning files
-Switch-AzureMode -Name AzureServiceManagement
 New-AzureStorageAccount -StorageAccountName $StorageAccount -Type "Standard_LRS" -Location "East US" -ea 0 
 $StorageKey = (Get-AzureStorageKey -StorageAccountName $StorageAccount).Primary
 $StorageContext = New-AzureStorageContext -StorageAccountName $StorageAccount -StorageAccountKey $StorageKey
@@ -31,12 +31,13 @@ Switch-AzureMode -Name AzureServiceManagement
 Get-ChildItem .\Extensions | %{
     Set-AzureStorageBlobContent -File $_.FullName -Blob $_.Name -Container $StorageContainer -Context $StorageContext -Force
 }
+Switch-AzureMode -Name AzureServiceManagement
 Set-AzureStorageBlobContent -File .\SP-Dev-Environment.json -Blob SP-Dev-Environment.json -Context $StorageContext -Container $StorageContainer -Force | Out-Null
 
 
 # Create Resource Group
 Switch-AzureMode -Name AzureResourceManager
-$ResourceGroupName = "<resource group name - LOWERCASE>"
+$ResourceGroupName = "<RESOURCE GROUP NAME>"
 $Location = "East US"
 $rg = Get-AzureResourceGroup -Name $ResourceGroupName -EA 0
 if($rg -eq $null) {
@@ -44,25 +45,48 @@ if($rg -eq $null) {
 }
 
 # Credentials
-$creds = Get-Credential -Message "Enter Crendetials"
+$domain = $ResourceGroupName
+$domainfqdn = "$($domain).com"
+$domaadmin = Get-Credential -Message "Enter Admin Credentials (no domain)" -UserName "wwadmin"
+$sqlsvc = Get-Credential -Message "Enter SQL Server Credentials" -UserName "$domain\sqlserver"
+$farmadmin = Get-Credential -Message "Enter Farm Admin Credentials" -UserName "$domain\spfarm"
+$setup = Get-Credential -Message "Enter Setup Account Credentials" -UserName "$domain\spsetup"
+$webpool = Get-Credential -Message "Enter Web Pool Credentials" -UserName "$domain\spwebapp"
+$service = Get-Credential -Message "Enter Service App Credentials" -UserName "$domain\spservice"
 
 # Build the parameters
 $params = @{
        ServiceName ="$ResourceGroupName";
-       administratorAccount="$($creds.UserName)";
-       administratorPassword="$($creds.GetNetworkCredential().Password)";
-       servicePassword="$($creds.GetNetworkCredential().Password)";
-       domainName="$($ResourceGroupName).com";
-       domainNetBiosName="$($ResourceGroupName)";
+       DomainAdminAccount="$($domaadmin.UserName)";
+       DomainAdminAccountPassword=$domaadmin.Password;
+       DomainNameFQDN = $domainfqdn;
+       DomainName = $domain;
+       SQLServiceAccount=$sqlsvc.UserName;
+       SQLServiceAccountPassword=$sqlsvc.Password;
+       FarmAccount=$farmadmin.UserName;
+       FarmAccountPassword=$farmadmin.Password;
+       InstallAccount=$setup.UserName;
+       InstallAccountPassword=$setup.Password;
+       WebPoolManagedAccount=$webpool.UserName;
+       WebPoolManagedAccountPassword=$webpool.Password;
+       ServicePoolManagedAccount=$service.UserName;
+       ServicePoolManagedAccountPassword=$service.Password;
        resourceLocation="East US";
-
+       FarmPassPhrase = "pass@word1";
+       SharePointProductKey = "<PID>";
+       WebAppUrl = "http://localhost";
+       TeamSiteUrl = "http://teams";
+       MySiteHostUrl = "http://my";
+       DevSiteUrl = "http://dev";
 }
 
 
+Switch-AzureMode -Name AzureServiceManagement
+Set-AzureStorageBlobContent -File .\SP-Dev-Environment.json -Blob SP-Dev-Environment.json `
+    -Context $StorageContext -Container $StorageContainer -Force | Out-Null
+
+Switch-AzureMode -Name AzureResourceManager
+
 New-AzureResourceGroupDeployment -Name $ResourceGroupName -ResourceGroupName $ResourceGroupName `
     -TemplateParameterObject $params `
-    -TemplateUri "https://wwprovisioningfiles.blob.core.windows.net/scripts/SP-Dev-Environment.json"
-
-
-
-
+    -TemplateUri "https://wwazprst.blob.core.windows.net/scripts/SP-Dev-Environment.json" -Verbose

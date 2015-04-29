@@ -1,48 +1,40 @@
-#
-# Copyright="© Microsoft Corporation. All rights reserved."
-#
 
-param
-(
-    [Parameter(Mandatory)]
-    [String]$DomainName,
-
-    [String]$DomainNetbiosName,
-
-    [Parameter(Mandatory)]
-    [String]$UserName,
-
-    [Parameter(Mandatory)]
-    [String]$Password,
-
-    [String]$SafeModeAdministratorPassword = $Password,
-
-    [String]$EncryptionCertificateThumbprint
-)
-
-. "$PSScriptRoot\Common.ps1"
-
-Start-ScriptLog
-
-if ($EncryptionCertificateThumbprint)
-{
-    Write-Verbose -Message "Decrypting parameters with certificate $EncryptionCertificateThumbprint..."
-
-    $Password = Decrypt -Thumbprint $EncryptionCertificateThumbprint -Base64EncryptedValue $Password
-    $SafeModeAdministratorPassword = Decrypt -Thumbprint $EncryptionCertificateThumbprint -Base64EncryptedValue $SafeModeAdministratorPassword
-
-    Write-Verbose -Message "Successfully decrypted parameters."
+try {
+    Set-ExecutionPolicy -ExecutionPolicy Unrestricted 
 }
-else
-{
-    Write-Verbose -Message "No encryption certificate specified. Assuming cleartext parameters."
+catch{
+    Write-Verbose 'An exception occurred setting Execution Policy - Trying to Continue -:'
+    if ($Error) {
+        Write-Verbose ($Error|fl * -Force|Out-String) 
+    }
 }
+  
+
 
 configuration ADDSForest
 {
-    Import-DscResource -ModuleName xComputerManagement, xActiveDirectory
+	param
+	(
+		[Parameter(Mandatory)] [String]$DomainName,	
+		[Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $DomainAdminAccount,
+		[Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $SQLServiceAccount,
+        [Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $FarmAccount,
+        [Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $InstallAccount,
+        [Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $WebPoolManagedAccount,
+        [Parameter(Mandatory=$true)] [ValidateNotNullorEmpty()] [PSCredential] $ServicePoolManagedAccount,
 
-    Node $env:COMPUTERNAME
+		[String]$DomainNetbiosName=$(Get-NetBIOSName($DomainName))
+
+	)
+
+
+    Import-DscResource -ModuleName xActiveDirectory
+	 Import-DscResource -ModuleName xDisk
+	 Import-DscResource -ModuleName xNetworking
+	 [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainNetbiosName}\$($DomainAdminAccount.UserName)", $DomainAdminAccount.Password)
+
+
+    Node localhost
     {
         Script PowerPlan
         {
@@ -67,14 +59,15 @@ configuration ADDSForest
         {             
             Ensure = "Present"             
             Name = "RSAT-ADDS"             
-        }  
+        }
+		  
 
         xADDomain PrimaryDC
         {
-            DomainAdministratorCredential = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
+            DomainAdministratorCredential = $DomainAdminAccount
             DomainName = $DomainName
             DomainNetbiosName = $DomainNetbiosName
-            SafemodeAdministratorPassword = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $SafeModeAdministratorPassword -AsPlainText -Force))
+            SafemodeAdministratorPassword = $DomainAdminAccount
             DatabasePath = "F:\NTDS"
             LogPath = "F:\NTDS"
             SysvolPath = "F:\SYSVOL"
@@ -84,9 +77,29 @@ configuration ADDSForest
         xADUser SPFarm 
         {
             DomainName = $DomainName
-            DomainAdministratorCredential = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
-            UserName = "SPFarm" 
-            Password = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
+            DomainAdministratorCredential = $DomainAdminAccount
+            UserName = $FarmAccount.UserName.Split('`\')[1]
+            Password = $FarmAccount
+            Ensure = "Present" 
+            DependsOn = "[xADDomain]PrimaryDC" 
+        }
+
+		xADUser WebPoolManagedAccount 
+        {
+            DomainName = $DomainName
+            DomainAdministratorCredential = $DomainAdminAccount
+            UserName = $WebPoolManagedAccount.UserName.Split('`\')[1]
+            Password = $WebPoolManagedAccount
+            Ensure = "Present" 
+            DependsOn = "[xADDomain]PrimaryDC" 
+        }
+
+		xADUser ServicePoolManagedAccount 
+        {
+            DomainName = $DomainName
+            DomainAdministratorCredential = $DomainAdminAccount
+            UserName = $ServicePoolManagedAccount.UserName.Split('`\')[1]
+            Password = $ServicePoolManagedAccount
             Ensure = "Present" 
             DependsOn = "[xADDomain]PrimaryDC" 
         }
@@ -94,9 +107,9 @@ configuration ADDSForest
         xADUser SPSetup 
         {
             DomainName = $DomainName
-            DomainAdministratorCredential = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
-            UserName = "SPSetup" 
-            Password = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
+            DomainAdministratorCredential = $DomainAdminAccount
+            UserName = $InstallAccount.UserName.Split('`\')[1]
+            Password = $InstallAccount
             Ensure = "Present" 
             DependsOn = "[xADDomain]PrimaryDC" 
         }
@@ -105,112 +118,38 @@ configuration ADDSForest
         xADUser SQLService 
         {
             DomainName = $DomainName
-            DomainAdministratorCredential = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
-            UserName = "SQLService" 
-            Password = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
+            DomainAdministratorCredential = $DomainAdminAccount
+            UserName = $SQLServiceAccount.UserName.Split('`\')[1]
+            Password = $SQLServiceAccount
             Ensure = "Present" 
             DependsOn = "[xADDomain]PrimaryDC" 
         }
 
-
-        xADUser SQLAgent 
-        {
-            DomainName = $DomainName
-            DomainAdministratorCredential = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
-            UserName = "SQLAgent" 
-            Password = New-Object System.Management.Automation.PSCredential ("$DomainName\$UserName", $(ConvertTo-SecureString $Password -AsPlainText -Force))
-            Ensure = "Present" 
-            DependsOn = "[xADDomain]PrimaryDC" 
-        }
 
         LocalConfigurationManager
         {
-            CertificateId = $node.Thumbprint
+            RebootNodeIfNeeded = $true
         }
     }
 }
-
-if ($EncryptionCertificateThumbprint)
-{
-    $certificate = dir Cert:\LocalMachine\My\$EncryptionCertificateThumbprint
-    $certificatePath = Join-Path -path $PSScriptRoot -childPath "EncryptionCertificate.cer"
-    Export-Certificate -Cert $certificate -FilePath $certificatePath | Out-Null
-    $configData = @{
-        AllNodes = @(
-            @{
-                Nodename = $env:COMPUTERNAME
-                CertificateFile = $certificatePath
-                Thumbprint = $EncryptionCertificateThumbprint
-            }
-        )
+function Get-NetBIOSName([string]$DomainName)
+{ 
+    [string]$NetBIOSName
+    if ($DomainName.Contains('.')) {
+        $length=$DomainName.IndexOf('.')
+        if ( $length -ge 16) {
+            $length=15
+        }
+        $NetBIOSName=$DomainName.Substring(0,$length)
     }
-}
-else
-{
-    $configData = @{
-        AllNodes = @(
-            @{
-                Nodename = $env:COMPUTERNAME
-                PSDscAllowPlainTextPassword = $true
-            }
-        )
-    }
-}
-
-
-WaitForPendingMof
-
-ADDSForest -ConfigurationData $configData -OutputPath $PSScriptRoot
-
-$cimSessionOption = New-CimSessionOption -SkipCACheck -SkipCNCheck -UseSsl
-$cimSession = New-CimSession -SessionOption $cimSessionOption -ComputerName $env:COMPUTERNAME -Port 5986
-
-if ($EncryptionCertificateThumbprint)
-{
-    Set-DscLocalConfigurationManager -CimSession $cimSession -Path $PSScriptRoot -Verbose
-}
-
-# Run Start-DscConfiguration in a loop to make it more resilient to network outages.
-$Stoploop = $false
-$MaximumRetryCount = 5
-$Retrycount = 0
-$SecondsDelay = 0
-
-do
-{
-    try
-    {
-        $error.Clear()
-
-        Write-Verbose -Message "Attempt $Retrycount of $MaximumRetryCount ..."
-        Start-DscConfiguration -CimSession $cimSession -Path $PSScriptRoot -Force -Wait -Verbose *>&1 | Tee-Object -Variable output
-
-        if (!$error)
-        {
-            $Stoploop = $true
+    else {
+        if ($DomainName.Length -gt 15) {
+            $NetBIOSName=$DomainName.Substring(0,15)
+        }
+        else {
+            $NetBIOSName=$DomainName
         }
     }
-    catch
-    {
-        # $_ in the catch block to include more details about the error that occured.
-        Write-Warning ("CreatePrimaryDomainController failed. Error:" + $_)
-
-        if ($Retrycount -ge $MaximumRetryCount)
-        {
-            Write-Warning ("CreatePrimaryDomainController operation failed all retries")
-            $Stoploop = $true
-        }
-        else
-        {
-            $SecondsDelay  = Get-TruncatedExponentialBackoffDelay -PreviousBackoffDelay $SecondsDelay -LowerBackoffBoundSeconds 10 -UpperBackoffBoundSeconds 120 -BackoffMultiplier 2
-            Write-Warning -Message "An error has occurred, retrying in $SecondsDelay seconds ..."
-            Start-Sleep $SecondsDelay
-            $Retrycount = $Retrycount + 1
-        }
-    }
+    return $NetBIOSName
 }
-while ($Stoploop -eq $false)
 
-CheckForPendingReboot -Output $output
-
-Stop-ScriptLog
